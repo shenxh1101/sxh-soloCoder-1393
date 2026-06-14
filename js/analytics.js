@@ -59,3 +59,31 @@ function formatNumber(n) {
   if (n === null || n === undefined || isNaN(n)) return '0';
   return n.toLocaleString('zh-CN', { maximumFractionDigits: 1 });
 }
+
+function formatCurrency(n) {
+  if (n === null || n === undefined || isNaN(n)) return '¥0';
+  return '¥' + Math.round(n).toLocaleString('zh-CN');
+}
+
+function formatPercent(n) {
+  if (n === null || n === undefined || isNaN(n)) return '0%';
+  return (Math.round(n * 1000) / 10) + '%';
+}
+
+function riskLevelClass(risk) {
+  if (!risk) return 'risk-low';
+  if (risk === 'high') return 'risk-high';
+  if (risk === 'medium') return 'risk-medium';
+  return 'risk-low';
+}
+
+function riskBadge(riskObj) {
+  if (!riskObj) return '<span class="badge badge-gray">—</span>';
+  const map = {
+    high: { cls: 'badge-danger', icon: '🔴' },
+    medium: { cls: 'badge-warning', icon: '🟡' },
+    low: { cls: 'badge-success', icon: '🟢' }
+  };
+  const m = map[riskObj.risk] || map.low;
+  return `<span class="badge ${m.cls}">${m.icon} ${riskObj.label}</span>`;
+}

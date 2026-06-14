@@ -17,14 +17,17 @@
     </div>
     <div class="navbar-right">
       <div class="navbar-date" id="currentDate">—</div>
+      <button class="btn btn-secondary" id="scenarioBtn">
+        <span>🎯</span> 情景沙盘
+      </button>
       <button class="btn btn-secondary" id="compareBtn">
-        <span>⚖️</span> 方案对比
+        <span>⚖️</span> 算法对比
       </button>
       <button class="btn btn-secondary" id="addPromoBtn">
-        <span>🎯</span> 促销计划
+        <span>�</span> 活动管理
       </button>
       <button class="btn btn-primary" id="exportBtn">
-        <span>📥</span> 导出采购单
+        <span>📥</span> 确认采购
       </button>
     </div>
   </nav>
@@ -168,20 +171,23 @@
                 <th style="width: 40px;">
                   <input type="checkbox" id="headerCheck" style="display:none;">
                 </th>
-                <th style="min-width: 190px;">商品信息</th>
+                <th style="min-width: 210px;">商品信息</th>
                 <th>分类</th>
-                <th>单价</th>
+                <th>供应商</th>
+                <th class="num-col">单价</th>
                 <th class="num-col">当前库存</th>
-                <th style="min-width: 110px;">30天趋势</th>
+                <th style="min-width: 100px;">30天趋势</th>
                 <th class="num-col">月均销量</th>
                 <th class="num-col">周转率</th>
                 <th class="num-col">7天预测</th>
+                <th class="num-col">缺货风险</th>
                 <th class="num-col">安全库存</th>
                 <th class="num-col">箱规</th>
                 <th class="num-col">预测准确率</th>
                 <th class="num-col">建议补货</th>
                 <th class="num-col" style="min-width: 90px;">实际补货</th>
                 <th class="num-col">箱数</th>
+                <th class="num-col">采购金额</th>
               </tr>
             </thead>
             <tbody id="skuTableBody">
@@ -377,11 +383,11 @@
     </div>
   </div>
 
-  <!-- 方案对比弹窗 -->
+  <!-- 算法对比弹窗（保留） -->
   <div class="modal-overlay" id="compareModal">
     <div class="modal modal-wide">
       <div class="modal-header">
-        <div class="modal-title">⚖️ 预测方案对比</div>
+        <div class="modal-title">⚖️ 算法对比 · MA vs ES</div>
         <button class="modal-close" id="closeCompareModal">×</button>
       </div>
       <div class="modal-body" style="padding: 0; max-height: 70vh;">
@@ -403,7 +409,7 @@
               <div class="kpi-label">B方案采购金额</div>
               <div class="num-mono" id="compareESAmount" style="font-size: 18px;">—</div>
             </div>
-            <button class="btn btn-primary btn-sm" id="runCompareAgainBtn">🔄 重新计算对比</button>
+            <button class="btn btn-primary btn-sm" id="runCompareAgainBtn">🔄 重新计算</button>
           </div>
         </div>
         <div class="table-wrapper" style="max-height: calc(70vh - 140px); border-radius: 0;">
@@ -411,20 +417,20 @@
             <thead>
               <tr>
                 <th rowspan="2" style="min-width: 180px;">商品</th>
-                <th colspan="2" style="background: var(--navy-800); text-align: center;">7天预测总量</th>
-                <th colspan="2" style="background: var(--navy-800); text-align: center;">预测准确率</th>
-                <th colspan="2" style="background: var(--navy-800); text-align: center;">建议补货量</th>
+                <th colspan="2" style="background: var(--navy-800); text-align: center;">7天预测</th>
+                <th colspan="2" style="background: var(--navy-800); text-align: center;">准确率</th>
+                <th colspan="2" style="background: var(--navy-800); text-align: center;">建议补货</th>
                 <th colspan="2" style="background: var(--navy-800); text-align: center;">采购金额</th>
               </tr>
               <tr>
-                <th style="text-align: right;">移动平均</th>
-                <th style="text-align: right;">指数平滑</th>
-                <th style="text-align: right;">移动平均</th>
-                <th style="text-align: right;">指数平滑</th>
-                <th style="text-align: right;">移动平均</th>
-                <th style="text-align: right;">指数平滑</th>
-                <th style="text-align: right;">移动平均</th>
-                <th style="text-align: right;">指数平滑</th>
+                <th style="text-align: right;">MA</th>
+                <th style="text-align: right;">ES</th>
+                <th style="text-align: right;">MA</th>
+                <th style="text-align: right;">ES</th>
+                <th style="text-align: right;">MA</th>
+                <th style="text-align: right;">ES</th>
+                <th style="text-align: right;">MA</th>
+                <th style="text-align: right;">ES</th>
               </tr>
             </thead>
             <tbody id="compareTableBody"></tbody>
@@ -432,71 +438,148 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="applyMABtn">✅ 采用移动平均方案</button>
-        <button class="btn btn-ghost" id="applyESBtn">✅ 采用指数平滑方案</button>
+        <button class="btn btn-ghost" id="applyMABtn">✅ 采用MA方案</button>
+        <button class="btn btn-ghost" id="applyESBtn">✅ 采用ES方案</button>
         <button class="btn btn-secondary" id="cancelCompareBtn">关闭</button>
       </div>
     </div>
   </div>
 
-  <!-- 采购确认弹窗 -->
+  <!-- 情景沙盘弹窗 -->
+  <div class="modal-overlay" id="scenarioModal">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <div class="modal-title">🎯 情景沙盘 · 基准 / 保守 / 促销冲量</div>
+        <button class="modal-close" id="closeScenarioModal">×</button>
+      </div>
+      <div class="modal-body" style="padding: 0; max-height: 78vh; display: flex; flex-direction: column;">
+        <div class="scenario-panel">
+          <div class="scenario-tabs" id="scenarioTabs">
+            <div class="scenario-tab active" data-tab="base">
+              <span class="dot base"></span> 基准方案
+              <span class="tab-meta" id="baseMeta">（未保存）</span>
+            </div>
+            <div class="scenario-tab" data-tab="conservative">
+              <span class="dot conservative"></span> 保守方案
+              <span class="tab-meta" id="conservativeMeta">（未保存）</span>
+            </div>
+            <div class="scenario-tab" data-tab="aggressive">
+              <span class="dot aggressive"></span> 促销冲量
+              <span class="tab-meta" id="aggressiveMeta">（未保存）</span>
+            </div>
+            <div style="flex:1;"></div>
+            <div style="font-size: 11px; color: var(--gray-500);">💡 切换参数/活动后点击「保存当前为xx方案」，三套方案可并排对比</div>
+          </div>
+          <div class="scenario-save-bar">
+            <button class="btn-outline" id="saveAsBaseBtn">💾 保存为基准方案</button>
+            <button class="btn-outline" id="saveAsConservativeBtn">💾 保存为保守方案</button>
+            <button class="btn-outline" id="saveAsAggressiveBtn">💾 保存为促销冲量方案</button>
+            <button class="btn-outline" id="rebuildAllScenariosBtn">🔄 按当前参数重新生成三套</button>
+          </div>
+        </div>
+        <div style="overflow-y: auto; flex: 1;">
+          <div class="scenario-compare-grid" id="scenarioCompareGrid">
+            <div class="empty-state-mini" style="grid-column:1/-1;">
+              <div class="empty-icon">🎯</div>
+              <div>暂无已保存的方案</div>
+              <div>点击上方按钮保存当前配置为方案</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div style="font-size: 12px; color: var(--gray-500);">点击方案卡片右上角可选中，再点下方「应用到主表」</div>
+        <div style="flex:1;"></div>
+        <button class="btn btn-ghost" id="cancelScenarioBtn">关闭</button>
+        <button class="btn btn-primary" id="applyScenarioBtn">✅ 应用选中方案到主表</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 采购确认弹窗（Tab版：商品明细/供应商拆分） -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal modal-wide">
       <div class="modal-header">
-        <div class="modal-title">✅ 采购单确认</div>
+        <div class="modal-title">✅ 采购单确认 & 供应商分单</div>
         <button class="modal-close" id="closeConfirmModal">×</button>
       </div>
-      <div class="modal-body" style="padding: 0; max-height: 75vh; display: flex; flex-direction: column;">
+      <div class="modal-body" style="padding: 0; max-height: 78vh; display: flex; flex-direction: column;">
         <div style="padding: 16px 20px; background: linear-gradient(135deg, var(--green-50) 0%, var(--orange-50) 100%); border-bottom: 1px solid var(--gray-100);">
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+          <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;">
             <div style="background: var(--white); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--gray-100);">
               <div class="kpi-label">采购SKU数</div>
-              <div class="kpi-value num-mono" id="confirmSkuCount" style="font-size: 22px;">0</div>
+              <div class="kpi-value num-mono" id="confirmSkuCount" style="font-size: 20px;">0</div>
+            </div>
+            <div style="background: var(--white); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--gray-100);">
+              <div class="kpi-label">供应商数</div>
+              <div class="kpi-value num-mono" id="confirmSupplierCount" style="font-size: 20px; color: var(--navy-700);">0</div>
             </div>
             <div style="background: var(--white); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--gray-100);">
               <div class="kpi-label">总箱数</div>
-              <div class="kpi-value num-mono" id="confirmTotalCases" style="font-size: 22px;">0</div>
+              <div class="kpi-value num-mono" id="confirmTotalCases" style="font-size: 20px;">0</div>
             </div>
             <div style="background: var(--white); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--gray-100);">
               <div class="kpi-label">采购总数量</div>
-              <div class="kpi-value num-mono" id="confirmTotalQty" style="font-size: 22px;">0</div>
+              <div class="kpi-value num-mono" id="confirmTotalQty" style="font-size: 20px;">0</div>
+              <div class="kpi-row-dual"><span class="sub-line">活动增量</span><span class="sub-value" id="confirmPromoExtraQty" style="color: var(--orange-500);">+0</span></div>
             </div>
             <div style="background: var(--white); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--gray-100);">
               <div class="kpi-label">采购总金额</div>
-              <div class="kpi-value num-mono num-orange" id="confirmTotalAmount" style="font-size: 22px;">¥0</div>
+              <div class="kpi-value num-mono num-orange" id="confirmTotalAmount" style="font-size: 20px;">¥0</div>
+              <div class="kpi-row-dual"><span class="sub-line">预计毛利</span><span class="sub-value" id="confirmGrossProfit" style="color: var(--green-500);">¥0</span></div>
+            </div>
+            <div style="background: var(--white); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--gray-100);">
+              <div class="kpi-label">平均覆盖天数</div>
+              <div class="kpi-value num-mono" id="confirmAvgCoverage" style="font-size: 20px; color: var(--navy-700);">—</div>
+              <div class="kpi-row-dual"><span class="sub-line">高风险缺货</span><span class="sub-value" id="confirmHighRiskCount" style="color: var(--red-500);">0</span></div>
             </div>
           </div>
-          <div style="margin-top: 12px; display: flex; gap: 16px; align-items: center; font-size: 12.5px; color: var(--gray-700); flex-wrap: wrap;">
-            <span>📦 平均库存覆盖天数：<strong id="confirmAvgCoverage" class="num-mono num-orange">—</strong> 天</span>
-            <span>📊 预测算法：<strong id="confirmMethodName">—</strong></span>
-            <span>🎯 含 <strong id="confirmPromoCount" class="num-mono">0</strong> 个促销活动影响</span>
+          <div style="margin-top: 12px; display: flex; gap: 16px; align-items: center; font-size: 12px; color: var(--gray-700); flex-wrap: wrap;">
+            <span>� 预测算法：<strong id="confirmMethodName">—</strong></span>
+            <span>🎯 含 <strong id="confirmPromoCount" class="num-mono">0</strong> 个促销活动</span>
           </div>
         </div>
-        <div class="table-wrapper" style="flex: 1; max-height: none; border-radius: 0;">
-          <table id="confirmTable" style="min-width: 1000px;">
+        <div class="tab-bar" id="confirmTabBar">
+          <div class="tab-item active" data-tab="items">
+            📋 商品明细 <span class="tab-badge" id="tabItemsBadge">0</span>
+          </div>
+          <div class="tab-item" data-tab="suppliers">
+            🏭 供应商拆分 <span class="tab-badge" id="tabSupplierBadge">0</span>
+          </div>
+        </div>
+        <div class="table-wrapper" id="confirmItemsPanel" style="flex: 1; max-height: none; border-radius: 0;">
+          <table id="confirmTable" style="min-width: 1300px;">
             <thead>
               <tr>
-                <th style="min-width: 170px;">商品</th>
+                <th style="min-width: 180px;">商品</th>
+                <th>供应商</th>
                 <th>分类</th>
                 <th class="num-col">单价</th>
                 <th class="num-col">当前库存</th>
                 <th class="num-col">7天预测</th>
                 <th class="num-col">安全库存</th>
+                <th class="num-col">缺货风险</th>
                 <th class="num-col">箱规</th>
                 <th class="num-col">采购箱数</th>
                 <th class="num-col">采购数量</th>
                 <th class="num-col">采购金额</th>
+                <th class="num-col">预计毛利</th>
                 <th class="num-col">到货后库存</th>
-                <th class="num-col">可覆盖天数</th>
+                <th class="num-col">覆盖天数</th>
+                <th class="num-col">预计到货</th>
               </tr>
             </thead>
             <tbody id="confirmTableBody"></tbody>
           </table>
         </div>
+        <div id="confirmSupplierPanel" style="flex: 1; max-height: none; overflow-y: auto; display: none; background: var(--gray-50);"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" id="cancelConfirmBtn">返回修改</button>
-        <button class="btn btn-primary" id="finalExportBtn">📥 确认并导出Excel</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" id="exportSupplierAllBtn">📥 导出全部分供应商Excel</button>
+          <button class="btn btn-primary" id="finalExportBtn">📥 确认并导出汇总Excel</button>
+        </div>
       </div>
     </div>
   </div>
