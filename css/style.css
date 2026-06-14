@@ -1020,3 +1020,133 @@ tbody tr.updated td {
     grid-template-columns: 1fr;
   }
 }
+
+.rule-global-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  background: var(--navy-800);
+  color: white;
+  border-radius: var(--radius-pill);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.rule-sku-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  background: linear-gradient(135deg, var(--orange-500), var(--orange-400));
+  color: white;
+  border-radius: var(--radius-pill);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+  margin-left: 4px;
+  box-shadow: var(--shadow-orange);
+}
+
+.case-size-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.modal.modal-wide {
+  max-width: 1080px;
+  width: 95%;
+}
+
+.compare-diff-better {
+  color: var(--green-500);
+  font-weight: 700;
+}
+
+.compare-diff-worse {
+  color: var(--red-500);
+}
+
+.compare-diff-equal {
+  color: var(--gray-500);
+}
+
+.compare-highlight-ma {
+  background: rgba(58, 90, 140, 0.06) !important;
+}
+
+.compare-highlight-es {
+  background: rgba(255, 107, 53, 0.06) !important;
+}
+
+.promo-delta-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  background: linear-gradient(135deg, #8E44AD, #9B59B6);
+  color: white;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+}
+
+.forecast-day.promo-boosted {
+  background: linear-gradient(135deg, #FFF3EE 0%, #FFE4D6 100%);
+  border-color: var(--orange-500);
+  position: relative;
+  overflow: hidden;
+}
+
+.forecast-day.promo-boosted::before {
+  content: '↑';
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  font-size: 9px;
+  color: var(--orange-500);
+  font-weight: 700;
+}
+
+.forecast-day-delta {
+  font-size: 9px;
+  color: var(--orange-500);
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+}
+
+.confirm-summary-row td {
+  background: var(--navy-900) !important;
+  color: white !important;
+  font-weight: 700;
+}
+
+.coverage-good {
+  color: var(--green-500);
+  font-weight: 700;
+}
+
+.coverage-warning {
+  color: #D4AC0D;
+  font-weight: 700;
+}
+
+.coverage-low {
+  color: var(--red-500);
+  font-weight: 700;
+}
+
+.empty-state-mini {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--gray-500);
+  font-size: 13px;
+}
+
+.empty-state-mini .empty-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+  opacity: 0.4;
+}

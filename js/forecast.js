@@ -34,28 +34,77 @@ function runForecast(history, params) {
   return movingAverage(history, windowSize, 7);
 }
 
+function expandPromoDateRange(promo) {
+  const dates = [];
+  if (promo.dates && promo.dates.length > 0) {
+    return promo.dates;
+  }
+  const start = new Date(promo.startDate || promo.date);
+  const endDate = promo.endDate || promo.startDate || promo.date;
+  const end = new Date(endDate);
+  const cur = new Date(start);
+  while (cur <= end) {
+    dates.push(cur.toISOString().split('T')[0]);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
+
+function getPromoAffectedSkus(promo) {
+  if (promo.scope === 'category') {
+    return SKU_DATA.filter(s => s.category === promo.category).map(s => s.id);
+  }
+  if (promo.scope === 'multi' && promo.skuIds && promo.skuIds.length > 0) {
+    return promo.skuIds;
+  }
+  return [promo.skuId];
+}
+
 function applyPromotions(forecast, skuId, promotions, futureDates) {
   const sku = getSkuById(skuId);
   const adjusted = [...forecast];
-  const relevantPromos = promotions.filter(p => p.skuId === skuId);
-  relevantPromos.forEach(promo => {
-    const dateIdx = futureDates.indexOf(promo.date);
-    if (dateIdx >= 0 && dateIdx < 7) {
-      const baseMultiplier = 1 + (1 - promo.discount) * sku.promotionElasticity;
-      const multiplier = promo.impactFactor || baseMultiplier;
-      adjusted[dateIdx] = Math.round(adjusted[dateIdx] * multiplier);
-    }
+  const promoImpact = new Array(7).fill(null);
+  promotions.forEach(promo => {
+    const affectedSkus = getPromoAffectedSkus(promo);
+    if (!affectedSkus.includes(skuId)) return;
+    const promoDates = expandPromoDateRange(promo);
+    const baseMultiplier = 1 + (1 - promo.discount) * sku.promotionElasticity;
+    const multiplier = promo.impactFactor || baseMultiplier;
+    promoDates.forEach(dateStr => {
+      const dateIdx = futureDates.indexOf(dateStr);
+      if (dateIdx >= 0 && dateIdx < 7) {
+        const original = forecast[dateIdx];
+        const boosted = Math.round(original * multiplier);
+        adjusted[dateIdx] = Math.max(adjusted[dateIdx], boosted);
+        promoImpact[dateIdx] = {
+          promoId: promo.id,
+          promoName: promo.name || `${Math.round(promo.discount * 10)}折`,
+          discount: promo.discount,
+          multiplier,
+          original,
+          boosted: adjusted[dateIdx],
+          delta: adjusted[dateIdx] - original
+        };
+      }
+    });
   });
-  return adjusted;
+  return { adjusted, promoImpact };
 }
 
 function runForecastForAll(params, promotions, futureDates) {
   const results = {};
+  const promoImpacts = {};
   SKU_DATA.forEach(sku => {
     const sales = getSalesBySku(sku.id);
     const baseForecast = runForecast(sales.history, params);
-    const adjustedForecast = applyPromotions(baseForecast, sku.id, promotions, futureDates);
-    results[sku.id] = adjustedForecast;
+    const { adjusted, promoImpact } = applyPromotions(baseForecast, sku.id, promotions, futureDates);
+    results[sku.id] = adjusted;
+    promoImpacts[sku.id] = promoImpact;
   });
-  return results;
+  return { forecast: results, promoImpacts };
+}
+
+function runForecastForAllLegacy(params, promotions, futureDates) {
+  const { forecast } = runForecastForAll(params, promotions, futureDates);
+  return forecast;
 }
