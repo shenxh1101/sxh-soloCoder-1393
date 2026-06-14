@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>零售门店销售预测与补货系统</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <div class="navbar-logo">📊</div>
+      <div>
+        <div class="navbar-title">Retail Forecast Pro</div>
+        <div class="navbar-subtitle">智能销售预测 · 精准补货决策</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <div class="navbar-date" id="currentDate">—</div>
+      <button class="btn btn-secondary" id="addPromoBtn">
+        <span>🎯</span> 促销计划
+      </button>
+      <button class="btn btn-primary" id="exportBtn">
+        <span>📥</span> 导出采购单
+      </button>
+    </div>
+  </nav>
+
+  <div class="main-container">
+    <aside class="params-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-title-icon">⚙️</span>
+            预测参数配置
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">预测算法</label>
+            <select id="forecastMethod">
+              <option value="movingAverage">移动平均法 (Moving Average)</option>
+              <option value="exponentialSmoothing">指数平滑法 (Exponential Smoothing)</option>
+            </select>
+            <div class="form-hint">移动平均法适合稳定趋势，指数平滑法更重视近期数据</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">窗口大小 (天数)</label>
+            <div class="radio-group">
+              <div class="radio-option">
+                <input type="radio" name="windowSize" id="ws3" value="3">
+                <label for="ws3">3 天</label>
+              </div>
+              <div class="radio-option">
+                <input type="radio" name="windowSize" id="ws5" value="5" checked>
+                <label for="ws5">5 天</label>
+              </div>
+              <div class="radio-option">
+                <input type="radio" name="windowSize" id="ws7" value="7">
+                <label for="ws7">7 天</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" id="alphaGroup">
+            <label class="form-label">平滑系数 α</label>
+            <div class="slider-group">
+              <input type="range" id="alphaSlider" min="0.1" max="0.9" step="0.05" value="0.3">
+              <span class="slider-value" id="alphaValue">0.30</span>
+            </div>
+            <div class="form-hint">α越大越重视近期变化，α越小越平滑</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">安全库存天数</label>
+            <div class="slider-group">
+              <input type="range" id="safetySlider" min="1" max="14" step="1" value="3">
+              <span class="slider-value" id="safetyValue">3 天</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">默认每箱规格</label>
+            <input type="number" id="caseSizeInput" value="12" min="1" max="100">
+            <div class="form-hint">未单独配置的SKU将使用此值</div>
+          </div>
+
+          <button class="btn run-btn" id="runForecastBtn">
+            🚀 运行预测与补货计算
+          </button>
+        </div>
+      </div>
+
+      <div class="card" style="animation-delay: 0.1s">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-title-icon">💡</span>
+            操作指南
+          </div>
+        </div>
+        <div class="card-body" style="font-size: 12.5px; line-height: 1.8; color: var(--gray-500)">
+          <p>1️⃣ 配置左侧预测算法与参数</p>
+          <p>2️⃣ 点击「促销计划」可录入未来促销活动</p>
+          <p>3️⃣ 点击「运行预测」生成销量预测</p>
+          <p>4️⃣ 在表格中可手动调整补货数量（自动取整箱）</p>
+          <p>5️⃣ 勾选需采购商品后「导出采购单」</p>
+          <p style="margin-top: 10px; padding: 8px 10px; background: var(--red-50); border-radius: 6px; color: var(--red-500);">
+            ⚠️ <strong>红色背景</strong> = 库存周转率 &lt; 1.0 的滞销商品
+          </p>
+        </div>
+      </div>
+    </aside>
+
+    <main class="data-section">
+      <div class="card" style="animation-delay: 0.05s">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-title-icon">🛒</span>
+            SKU销售预测与补货建议
+            <span id="skuCountBadge" class="badge badge-info" style="margin-left: 8px; font-size: 10px;">10个SKU</span>
+          </div>
+          <span style="font-size: 11px; color: var(--gray-500);">展示10个代表性SKU · 门店共100个SKU</span>
+        </div>
+
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="selectAll">
+              <label for="selectAll" style="font-size: 12.5px; font-weight: 600;">全选</label>
+            </div>
+            <div class="search-input">
+              <input type="text" id="searchInput" placeholder="搜索商品名称/SKU...">
+            </div>
+            <select class="select-filter" id="categoryFilter">
+              <option value="">全部分类</option>
+            </select>
+          </div>
+          <div class="toolbar-right">
+            <span style="font-size: 11.5px; color: var(--gray-500);">
+              库存预警: <span id="alertCount" class="badge badge-danger" style="margin-left: 4px;">0</span>
+            </span>
+            <span style="font-size: 11.5px; color: var(--gray-500);">
+              平均准确率: <span id="avgAccuracy" class="badge badge-success" style="margin-left: 4px;">—</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="skuTable">
+            <thead>
+              <tr>
+                <th style="width: 40px;">
+                  <input type="checkbox" id="headerCheck" style="display:none;">
+                </th>
+                <th style="min-width: 190px;">商品信息</th>
+                <th>分类</th>
+                <th>单价</th>
+                <th class="num-col">当前库存</th>
+                <th style="min-width: 110px;">30天趋势</th>
+                <th class="num-col">月均销量</th>
+                <th class="num-col">周转率</th>
+                <th class="num-col">7天预测</th>
+                <th class="num-col">安全库存</th>
+                <th class="num-col">预测准确率</th>
+                <th class="num-col">建议补货</th>
+                <th class="num-col" style="min-width: 90px;">实际补货</th>
+                <th class="num-col">箱数</th>
+              </tr>
+            </thead>
+            <tbody id="skuTableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <aside class="analytics-panel">
+      <div class="card" style="animation-delay: 0.15s">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-title-icon">📈</span>
+            关键指标概览
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="kpi-grid">
+            <div class="kpi-card navy">
+              <div class="kpi-label">库存总值</div>
+              <div class="kpi-value num-mono" id="kpiStockValue">—</div>
+              <div class="kpi-sub">基于当前库存 × 单价</div>
+            </div>
+            <div class="kpi-card orange">
+              <div class="kpi-label">月均销售额</div>
+              <div class="kpi-value num-mono" id="kpiMonthSales">—</div>
+              <div class="kpi-sub">过去30天累计</div>
+            </div>
+            <div class="kpi-card green">
+              <div class="kpi-label">平均周转率</div>
+              <div class="kpi-value num-mono" id="kpiTurnover">—</div>
+              <div class="kpi-sub">加权平均</div>
+            </div>
+            <div class="kpi-card red">
+              <div class="kpi-label">滞销商品数</div>
+              <div class="kpi-value num-mono" id="kpiSlowMoving">—</div>
+              <div class="kpi-sub">周转率 < 1.0</div>
+            </div>
+          </div>
+          <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--gray-100);">
+            <div class="kpi-label" style="margin-bottom: 10px;">补货统计</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div style="padding: 10px; background: var(--green-50); border-radius: var(--radius-sm);">
+                <div style="font-size: 11px; color: var(--gray-500);">需采购SKU数</div>
+                <div class="num-mono" style="font-size: 20px; font-weight: 700; color: var(--green-500);" id="kpiNeedBuy">0</div>
+              </div>
+              <div style="padding: 10px; background: var(--orange-50); border-radius: var(--radius-sm);">
+                <div style="font-size: 11px; color: var(--gray-500);">预计采购金额</div>
+                <div class="num-mono" style="font-size: 20px; font-weight: 700; color: var(--orange-500);" id="kpiBuyAmount">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="animation-delay: 0.2s">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-title-icon">🎯</span>
+            促销计划
+          </div>
+          <button class="btn btn-sm btn-ghost" id="addPromoBtn2">+ 新增</button>
+        </div>
+        <div class="card-body" style="padding: 14px;">
+          <div class="promo-list" id="promoList">
+            <div class="empty-state">
+              <div class="empty-icon">🎉</div>
+              <div>暂无促销计划</div>
+              <div style="margin-top: 4px;">点击「新增」添加促销活动</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="animation-delay: 0.25s">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-title-icon">🧮</span>
+            方法说明
+          </div>
+        </div>
+        <div class="card-body" style="font-size: 11.5px; line-height: 1.7;">
+          <div style="margin-bottom: 10px;">
+            <strong style="color: var(--navy-800);">移动平均法</strong><br>
+            <span style="color: var(--gray-500);">取最近N天均值作为预测，窗口越小越敏感</span>
+          </div>
+          <div style="margin-bottom: 10px;">
+            <strong style="color: var(--navy-800);">指数平滑法</strong><br>
+            <span style="color: var(--gray-500);">F = α·实际 + (1-α)·预测，越大越重视近期</span>
+          </div>
+          <div>
+            <strong style="color: var(--navy-800);">促销影响</strong><br>
+            <span style="color: var(--gray-500);">乘数 = 1 + (1-折扣) × 弹性系数</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="modal-overlay" id="promoModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">🎯 新增促销计划</div>
+        <button class="modal-close" id="closePromoModal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row full">
+          <div>
+            <label class="form-label">选择商品</label>
+            <select id="promoSkuSelect"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label class="form-label">促销日期</label>
+            <input type="date" id="promoDate">
+          </div>
+          <div>
+            <label class="form-label">折扣率</label>
+            <select id="promoDiscount">
+              <option value="0.5">5 折</option>
+              <option value="0.6">6 折</option>
+              <option value="0.7">7 折</option>
+              <option value="0.8" selected>8 折</option>
+              <option value="0.85">85折</option>
+              <option value="0.9">9 折</option>
+              <option value="0.95">95折</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row full">
+          <div>
+            <label class="form-label">销量影响系数 (1.0 = 无变化)</label>
+            <div class="slider-group">
+              <input type="range" id="promoImpact" min="1.0" max="3.0" step="0.1" value="1.3">
+              <span class="slider-value" id="promoImpactValue">1.3x</span>
+            </div>
+            <div class="form-hint" id="promoElasticityHint">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="cancelPromoBtn">取消</button>
+        <button class="btn btn-primary" id="confirmPromoBtn">✅ 添加促销</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/forecast.js"></script>
+  <script src="js/analytics.js"></script>
+  <script src="js/replenishment.js"></script>
+  <script src="js/exporter.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
